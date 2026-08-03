@@ -1,0 +1,54 @@
+{
+  "accuracy": 0.7123,
+  "precision": 0.5538,
+  "recall": 0.8114,
+  "f1_score": 0.6583,
+  "roc_auc": 0.8177,
+  "threshold": 0.4324,
+  "confusion_matrix": [
+    [
+      5687,
+      2919
+    ],
+    [
+      842,
+      3623
+    ]
+  ],
+  "metrics_at_default_threshold": {
+    "threshold": 0.5,
+    "accuracy": 0.7371,
+    "precision": 0.6011,
+    "recall": 0.6851,
+    "f1_score": 0.6404,
+    "confusion_matrix": [
+      [
+        6576,
+        2030
+      ],
+      [
+        1406,
+        3059
+      ]
+    ]
+  },
+  "metrics_at_tuned_threshold": {
+    "threshold": 0.4324,
+    "accuracy": 0.7123,
+    "precision": 0.5538,
+    "recall": 0.8114,
+    "f1_score": 0.6583,
+    "confusion_matrix": [
+      [
+        5687,
+        2919
+      ],
+      [
+        842,
+        3623
+      ]
+    ]
+  },
+  "git_commit": "N/A",
+  "timestamp": "2026-08-03T17:55:36.416434+00:00"
+}
