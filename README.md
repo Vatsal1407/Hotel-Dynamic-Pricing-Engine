@@ -18,7 +18,7 @@ The system uses an **XGBoost classification model** (39 engineered features, Opt
 
 - **Counterfactual Price Simulator:** Sweeps room prices across a custom grid to model $E[\text{Revenue}] = \text{Price} \times (1 - P_{\text{cancel}})$.
 - **Occupancy-Pacing Constraints:** Automatically enforces business rules (e.g., blocking discounts when occupancy $\ge 85\%$, allowing aggressive last-minute discounts when occupancy $\le 30\%$).
-- **Calibrated Risk Bands:** Uses a validation-set-tuned decision threshold ($T \approx 0.495$) to classify booking risks into `Low`, `Medium`, and `High` bands.
+- **Threshold-Tuned Risk Bands:** Uses a validation-set-tuned decision threshold (T ≈ 0.432) to classify booking risks into `Low`, `Medium`, and `High` bands.
 - **Interactive Recommender Dashboard:** Built with React 19, Tailwind CSS v4, and Recharts for live visualization of expected revenue curves.
 - **Auditable Prediction History:** Persists pricing runs to a PostgreSQL database for reporting and auditability.
 
@@ -141,18 +141,18 @@ The pipeline transforms raw booking inputs into **39 engineered numerical featur
 
 Rather than defaulting to an arbitrary `0.50` probability threshold, the decision threshold was optimized on the validation set to maximize F1-score:
 
-- **Tuned Threshold:** `0.4954`
-- **Impact:** Increases cancellation recall from **53.7%** to **73.53%**, ensuring the pricing engine catches 887+ additional true cancellations on the test set.
+- **Tuned Threshold:** `0.4324`
+- **Impact:** Increases cancellation recall on the test set from **68.51%** (default 0.50 threshold) to **81.14%**, catching **564 additional** true cancellations, at the cost of precision (60.11% → 55.38%).
 
 ### 6. Model Performance Metrics (Temporal Test Set: 13,071 bookings)
 
 | Metric                                  | Baseline Model (37 Features, 10 Trials) | Improved Model (39 Features, 30 Trials, ROC-AUC) |           Delta           |
 | :-------------------------------------- | :-------------------------------------: | :----------------------------------------------: | :------------------------: |
-| **ROC-AUC**                       |                 79.70%                 |                 **81.45%**                 |     **+1.75pp**     |
-| **Recall (Cancellations Caught)** |                 53.70%                 |                 **73.53%**                 |     **+19.83pp**     |
-| **F1-Score**                      |                 58.70%                 |                 **64.84%**                 |     **+6.14pp**     |
-| **Accuracy**                      |                 74.20%                 |                 **72.76%**                 | -1.44pp (Recall trade-off) |
-| **Precision**                     |                 64.80%                 |                 **57.98%**                 | -6.82pp (Recall trade-off) |
+| **ROC-AUC**                       |                 79.70%                 |                 **81.77%**                 |     **+2.07pp**     |
+| **Recall (Cancellations Caught)** |                 53.70%                 |                 **81.14%**                 |     **+27.44pp**     |
+| **F1-Score**                      |                 58.70%                 |                 **65.83%**                 |     **+7.13pp**     |
+| **Accuracy**                      |                 74.20%                 |                 **71.23%**                 | -2.97pp (Recall trade-off) |
+| **Precision**                     |                 64.80%                 |                 **55.38%**                 | -9.42pp (Recall trade-off) |
 
 ---
 
@@ -180,11 +180,11 @@ To align ML predictions with hotel revenue management principles, the optimizer 
 
 ### 3. Risk Category Classification
 
-Cancellation risk is categorized into three bands relative to the tuned decision threshold $T \approx 0.4954$:
+Cancellation risk is categorized into three bands relative to the tuned decision threshold $T \approx 0.4324$:
 
-- **`Low`:** $P_{\text{cancel}} < 0.75 \times T$ ($P_{\text{cancel}} < 37.1\%$)
-- **`Medium`:** $0.75 \times T \le P_{\text{cancel}} \le 1.50 \times T$ ($37.1\% \le P_{\text{cancel}} \le 74.3\%$)
-- **`High`:** $P_{\text{cancel}} > 1.50 \times T$ ($P_{\text{cancel}} > 74.3\%$)
+- **`Low`:** $P_{\text{cancel}} < 0.75 \times T$ ($P_{\text{cancel}} < 32.4\%$)
+- **`Medium`:** $0.75 \times T \le P_{\text{cancel}} \le 1.50 \times T$ ($32.4\% \le P_{\text{cancel}} \le 64.9\%$)
+- **`High`:** $P_{\text{cancel}} > 1.50 \times T$ ($P_{\text{cancel}} > 64.9\%$)
 
 ---
 
@@ -338,6 +338,7 @@ backend/tests/test_pricing.py::test_high_occupancy_never_discounts PASSED [ 94%]
 
 > [!IMPORTANT]
 > **No Experimental Price Elasticity:** This dataset contains historical observational hotel booking records, not randomized A/B test price elasticity data. The "price-response curve" reflects correlational patterns learned by the XGBoost classifier across historical bookings, not true causal price elasticity. This is a form of **partial-dependence / what-if analysis** on a trained supervised model — a legitimate and practical industry technique whose limitations should be understood upfront.
+> > **Uncalibrated probabilities:** Class weighting via `scale_pos_weight` shifts predicted probabilities upward, so `P_cancel` is a risk score rather than a calibrated probability. Expected-revenue values are therefore best read as relative rankings across prices, not absolute revenue forecasts.
 
 ---
 
